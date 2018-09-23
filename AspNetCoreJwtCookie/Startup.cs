@@ -1,5 +1,11 @@
+using AspNetCoreJwtCookie.Authentication;
 using AspNetCoreJwtCookie.DAL;
+using AspNetCoreJwtCookie.Models;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.AspNetCore.Identity;
@@ -26,8 +32,12 @@ namespace AspNetCoreJwtCookie
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            
             services.AddDbContext<ApplicationDbContext>(options => 
                 options.UseSqlServer(Configuration.GetConnectionString("JwtCookie")));
+            services.AddIdentity<ApplicationUser, IdentityRole>()
+                .AddEntityFrameworkStores<ApplicationDbContext>()
+                .AddDefaultTokenProviders();
 
             services.Configure<IdentityOptions>(options =>
             {
@@ -44,6 +54,31 @@ namespace AspNetCoreJwtCookie
 
                 options.User.RequireUniqueEmail = false;
             });
+
+            var signingKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(Configuration["jwt:SecretKey"]));
+            var tokenValidationParameters = new TokenValidationParameters()
+            {
+                ValidateIssuerSigningKey = true,
+                IssuerSigningKey = signingKey,
+                ValidateIssuer = true,
+                ValidIssuer = "iss-issuer",
+                ValidateAudience = true,
+                ValidAudience = "aud-audience",
+                ValidateLifetime = true,
+                ClockSkew = TimeSpan.Zero
+            };
+
+
+            services.AddAuthentication(options =>
+            {
+                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            }).AddJwtBearer(options =>
+            {
+                options.TokenValidationParameters = tokenValidationParameters;
+                options.SaveToken = true;
+            });
+            
 
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
 
@@ -67,7 +102,7 @@ namespace AspNetCoreJwtCookie
                 app.UseHsts();
             }
 
-            
+            app.UseAuthentication();
             app.UseHttpsRedirection();
             app.UseStaticFiles();
             app.UseSpaStaticFiles();
