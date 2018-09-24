@@ -1,4 +1,5 @@
 using AspNetCoreJwtCookie.DAL;
+using AspNetCoreJwtCookie.Middleware;
 using AspNetCoreJwtCookie.Models;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
@@ -97,6 +98,7 @@ namespace AspNetCoreJwtCookie
                 app.UseHsts();
             }
 
+            app.UseMiddleware<JwtCookieMiddleware>();
             app.UseAuthentication();
             app.UseHttpsRedirection();
             app.UseStaticFiles();
