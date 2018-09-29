@@ -21,6 +21,7 @@ namespace AspNetCoreJwtCookie.Middleware
             var accessTokenCookie = context.Request.Cookies["access_token"];
             if (accessTokenCookie != null)
             {
+                context.Request.Headers.Remove("Authorization");
                 context.Request.Headers.Append("Authorization", $"Bearer {accessTokenCookie}");
             }
             await _next.Invoke(context);
